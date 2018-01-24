@@ -1,0 +1,47 @@
+server:
+  port: 9411
+spring:
+  application:
+    name: TRACE
+  datasource:
+    initialize: false
+  sleuth:
+    enabled: false
+zipkin:
+  store:
+    type: mem
+eureka:
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    registry-fetch-interval-seconds: 5
+  instance:
+    preferIpAddress: false
+    instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+    leaseRenewalIntervalInSeconds: 1
+    leaseExpirationDurationInSeconds: 2
+---
+spring:
+  profiles: prd
+logging:
+  config: classpath:logback-prd.xml
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://ip-172-31-13-153.ap-northeast-2.compute.internal:8761/eureka/
+---
+spring:
+  profiles: dev
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+---
+spring:
+  profiles: ide
+logging:
+  config: classpath:logback-ide.xml
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: https://eureka.toanyone.io/eureka/
