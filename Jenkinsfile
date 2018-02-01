@@ -1,35 +1,98 @@
+#!/usr/bin/env groovy
 node {
+	properties([
+        pipelineTriggers([
+            [$class: 'GenericTrigger',
+                genericVariables: [
+                    [expressionType: 'JSONPath', key: 'reference', value: '$.ref'],
+                    [expressionType: 'JSONPath', key: 'before', value: '$.before'],
+                    [expressionType: 'JSONPath', key: 'after', value: '$.after'],
+                    [expressionType: 'JSONPath', key: 'repository', value: '$.repository.full_name']
+                ],
+                genericRequestVariables: [
+                    [key: 'requestWithNumber', regexpFilter: '[^0-9]'],
+                    [key: 'requestWithString', regexpFilter: '']
+                ],
+                genericHeaderVariables: [
+                    [key: 'headerWithNumber', regexpFilter: '[^0-9]'],
+                    [key: 'headerWithString', regexpFilter: '']
+                ],
+                regexpFilterText: '$repository/$reference',
+                regexpFilterExpression: 'MSA/trace/refs/heads/master'
+            ]
+        ])
+    ])
 
-    stage ('소스체크아웃') {
-        checkout([$class: 'GitSCM',
-            branches: [[name: '*/master']],
-            doGenerateSubmoduleConfigurations: false, extensions: [],
-            submoduleCfg: [],
-            userRemoteConfigs: [[credentialsId: 'DevPro', url: 'https://devpro.ktds.co.kr/msa/trace.git']]])
+    stage('Checkout') {
+        checkout scm
     }
 
-
-    stage ('스크링팅'){
-        sh 'ssh ec2-user@ip-172-31-12-174 "mkdir -p /home/ec2-user/trace/log"'
-        sh 'scp ./start.sh ec2-user@ip-172-31-12-174:/home/ec2-user/trace'
-        sh 'scp ./shutdown.sh ec2-user@ip-172-31-12-174:/home/ec2-user/trace'
-        sh 'ssh ec2-user@ip-172-31-12-174 "chmod a+x /home/ec2-user/trace/*.sh"'
+    stage('Test') {
+        sh './gradlew check || true'
     }
 
-    stage ('서버 중지'){
-        sh 'ssh ec2-user@ip-172-31-12-174 "/home/ec2-user/trace/shutdown.sh || true"'
+    stage('Build') {
+        try {
+            sh './gradlew build dockerPush'
+            archiveArtifacts artifacts: '**/build/libs/*.jar', fingerprint: true
+        } catch(e) {
+            mail subject: "Jenkins Job '${env.JOB_NAME}' (${env.BUILD_NUMBER}) failed with ${e.message}",
+                to: 'blue.park@kt.com',
+                body: "Please go to $env.BUILD_URL."
+        }
     }
 
-    stage ('빌드') {
-        sh './gradlew clean build'
+    stage('Deploy check') {
+        mail subject: "Jenkins Job '${env.JOB_NAME}' (${env.BUILD_NUMBER}) is waiting for input",
+            to: 'blue.park@kt.com',
+            body: "Please go to $env.BUILD_URL."
+
+        script {
+            def userInput = true
+            def didTimeout = false
+            def inputValue
+
+            try {
+
+                // Timeout in case to avoid running this forever
+                timeout(time: 60, unit: 'SECONDS') {
+                    inputValue = input(
+                        id: 'userInput', message: '계속 진행하시겠습니까?', parameters: [
+                            [$class: 'BooleanParameterDefinition',
+                                defaultValue: true,
+                                description: '', name: '확인'
+                            ]
+                        ])
+                }
+            } catch(err) {
+                echo err.toString()
+                def user = err.getCauses()[0].getUser()
+                if('SYSTEM' == user.toString()) { // SYSTEM means timeout.
+                    didTimeout = true
+                } else {
+                    userInput = false
+                    echo "Aborted by: [${user}]"
+                }
+            }
+
+            if (didTimeout) {
+                currentBuild.result = 'ABORTED'
+                false
+            } else if (userInput == true) {
+                false
+            } else {
+                currentBuild.result = 'ABORTED'
+                true
+            }
+        }
+
     }
 
-    stage ('배포') {
-        sh 'scp build/libs/trace-1.0.0-RELEASE.jar ec2-user@ip-172-31-12-174:/home/ec2-user/trace'
-    }
+    stage('Deploy') {
+        echo 'Build Result : ' + currentBuild.result
 
-    stage ('서버 시작') {
-        sh 'ssh ec2-user@ip-172-31-12-174 "/home/ec2-user/trace/start.sh /home/ec2-user/trace/trace-1.0.0-RELEASE.jar prd"'
+        if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+            sh 'true'
+        }
     }
-
 }
