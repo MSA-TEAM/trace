@@ -28,7 +28,7 @@ repositories {
 
 jar {
 	baseName = 'trace'
-	version =  '1.0.0-RELEASE'
+	version =  '1.0.0'
 }
 
 group = 'docker.gsp.sicc.co.kr'
