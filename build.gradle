@@ -28,7 +28,7 @@ repositories {
 
 jar {
 	baseName = 'trace'
-	version =  '1.0.0'
+	version =  '1.0.1'
 }
 
 group = 'docker.gsp.sicc.co.kr'
@@ -40,7 +40,7 @@ docker {
 }
 
 ext {
-	springCloudVersion = 'Edgware.SR1'
+	springCloudVersion = 'Edgware.SR2'
 }
 
 dependencies {

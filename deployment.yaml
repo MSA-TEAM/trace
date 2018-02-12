@@ -28,16 +28,16 @@ spec:
     metadata:
       labels:
         app: msa-trace
-        version: "1.0.0"
+        version: "1.0.1"
     spec:
       containers:
       - name: msa-trace
-        image: docker.gsp.sicc.co.kr/trace:1.0.0
+        image: docker.gsp.sicc.co.kr/trace:1.0.1
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: prd
         - name: spring.cloud.config.uri
-          value: http://100.102.123.211:8888
+          value: http://100.102.123.206:8888
         ports:
         - name: http
           containerPort: 8761
