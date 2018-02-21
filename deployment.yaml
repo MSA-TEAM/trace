@@ -1,7 +1,7 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: msa-trace-service
+  name: msa-trace
 spec:
   type: NodePort
   selector:
@@ -9,7 +9,7 @@ spec:
   ports:
   - protocol: TCP
     port: 9411
-    nodePort: 30001
+    nodePort: 31400
     targetPort: 9411
 ---
 apiVersion: extensions/v1beta1
@@ -35,9 +35,9 @@ spec:
         image: docker.gsp.sicc.co.kr/trace:1.0.1
         env:
         - name: SPRING_PROFILES_ACTIVE
-          value: prd
+          value: dev
         - name: spring.cloud.config.uri
-          value: http://100.102.123.206:8888
+          value: http://msa-config.development.svc.cluster.local:8888
         ports:
         - name: http
           containerPort: 8761
