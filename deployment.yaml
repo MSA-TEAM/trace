@@ -28,11 +28,11 @@ spec:
     metadata:
       labels:
         app: msa-trace
-        version: "1.0.1"
+        version: "1.0.2"
     spec:
       containers:
       - name: msa-trace
-        image: docker.gsp.sicc.co.kr/trace:1.0.1
+        image: docker.gsp.sicc.co.kr/trace:1.0.2
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: dev
@@ -40,4 +40,4 @@ spec:
           value: http://msa-config.development.svc.cluster.local:8888
         ports:
         - name: http
-          containerPort: 8761
+          containerPort: 9411
