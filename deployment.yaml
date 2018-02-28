@@ -30,6 +30,8 @@ spec:
         app: msa-trace
         version: "1.0.2"
     spec:
+      hostname: trace
+      subdomain: msa-trace
       containers:
       - name: msa-trace
         image: docker.gsp.sicc.co.kr/trace:1.0.2
